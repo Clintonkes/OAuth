@@ -15,16 +15,15 @@
     //start a session
     session_start();
 
-    //get the form data
-    $email = $_GET['email'];
-    $password = $_GET['password'];
-
-    //if the user is logged in
-    if(!isset($_GET['login'])) {
+      //if the user is logged in
+      if(!isset($_GET['action'])) {
         if(!empty($_SESSION['user_id'])) {
             echo '<h3>Logged In</h3>';
             echo '<p>User Id: '.$_SESSION['user_id'].'</p>';
             echo '<p>Email: '.$_SESSION['email'].'</p>';
+            echo '<p>First Name: '.$_SESSION['first_name'].'</p>';
+            echo '<p>Last Name: '.$_SESSION['last_name'].'</p>';
+            echo '<p><a href="/../../index.php?action=logout">Logout</a></p>';
 
             echo '<h3>User info</h3';
             echo '<pre>';
@@ -38,7 +37,7 @@
     }
 
     //check if the user wants to log in
-    if(isset($_GET['login']) && !empty($email) && !empty($password)) {
+    if(isset($_GET['action']) && $_GET['action'] == 'login') {
         //Generate a hash for the state and store
         $_SESSION['state'] = bin2hex(random_bytes(16));
 
@@ -60,7 +59,7 @@
     //Check that code and scope are the same
     if(isset($_GET['code'])) {
         if(!isset($_GET['state']) || $_SESSION['state'] != $_GET['state']) {
-            header('Location: '.$redirect_uri.'?error=invalide_state');
+            header('Location: '.$redirect_uri.'?error=invalid_state');
             die();
         }
 
@@ -76,7 +75,7 @@
         $response = json_decode(curl_exec($ch, true));
 
         //split the jwt into various parts
-        $jwt = explode('.', $data['id_token']);
+        $jwt = explode('.', $response['id_token']);
 
         //extract the middle part, base64 decode, then json_decode it
         $userinfo = json_decode(base64_decode($jwt[1]), true);
@@ -84,15 +83,18 @@
         //extract the sub and email to determine the user signed in
         $_SESSION['user_id'] = $userinfo['sub'];
         $_SESSION['email'] = $userinfo['email'];
+        $_SESSION['first_name'] = $userinfo['first_name'];
+        $_SESSION['last_name'] = $userinfo['last_name'];
 
         //store the access token and id token for use later
-        $_SESSION['access_token'] = $data['access_token'];
-        $_SESSION['id_token'] = $data['id_token'];
+        $_SESSION['access_token'] = $response['access_token'];
+        $_SESSION['id_token'] = $response['id_token'];
 
         header('Location: '. $redirect_uri);
         die();
     }
 
+  
 
 
 ?>
