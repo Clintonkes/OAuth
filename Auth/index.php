@@ -12,11 +12,22 @@
     //Access token Issuance URL
     $token = 'https://id-sandbox.cashtoken.africa/oauth/token';
 
+    function base64UrlEncode($data) {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
+    //code verifier
+    $codeVerifier = base64UrlEncode(random_bytes(32));
+    
+    //Generate a code challenge method
+    $hash = hash('sha256', $codeVerifier);
+    $codeChallenge = base64UrlEncode(pack('H*', $hash));
+
     //start a session
     session_start();
 
-      //if the user is logged in
-      if(!isset($_GET['action'])) {
+    //if the user is logged in
+    if(!isset($_GET['action'])) {
         if(!empty($_SESSION['user_id'])) {
             echo '<h3>Logged In</h3>';
             echo '<p>User Id: '.$_SESSION['user_id'].'</p>';
@@ -47,7 +58,9 @@
             'redirect_uri' => $redirect_uri,
             'client_id' => $ClientId,
             'scope' => 'openid email profile',
-            'state' => $_SESSION['state']
+            'state' => $_SESSION['state'],
+            'code_challenge' => $codeChallenge,
+            'code_challenge_method' => 'S256'
         );
 
         //Redirect the user to the authorization page
